@@ -10,39 +10,44 @@
 #include <stdlib.h> //system()
 #include <curl/curl.h> //smtp   
 #include <string.h> //string copy/cat
+#include "secrets.h" //put passwords in a header file until we can be bothered parsing config files
 
 
-//PA14=23, PA15=19, PA16=21
+//the data pins we're using on the OPi, PA14=23, PA15=19, PA16=21
 #define pin_sck 23
 #define pin_rx 21
 #define pin_tx 19
 
+//things relevant to external logging/notification
+//only need to travers the list in one direction, but need to be able to append. ALso need to add and clear list atomically
 struct MessageQueue
 {
     struct MessageQueue *next;
-    char message[500]; //longer than a message will ever be
+    char message[500]; //longer than a single message line will ever be
 };
 pthread_mutex_t muLog = PTHREAD_MUTEX_INITIALIZER;
 struct MessageQueue *pmqLogFirst = NULL;
 struct MessageQueue *pmqLogLast = NULL;
 int fEnableComms = 0;
 
+//pretty self-explanaory
 void logdata(const char * format, ...)
 {
-    //print the time
+    //init
     time_t rawtime;
     struct tm * timeinfo;
     struct MessageQueue *tmpMessage = malloc(sizeof(struct MessageQueue));
+    //collect the time
     time ( &rawtime );
     timeinfo = localtime ( &rawtime );
     int written = sprintf(tmpMessage->message, "[%d %d %d %d:%d:%d]", timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday, timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
-    //printf the actual input
+    //collect the actual input
     va_list args;
     va_start (args, format);
     vsprintf (tmpMessage->message +written, format, args);
     va_end (args);
-    printf(tmpMessage->message);
-    if(fEnableComms) { //add the message to the print queue.
+    printf(tmpMessage->message); //send to stdout
+    if(fEnableComms) { //add the message to the email queue.
         pthread_mutex_lock(&muLog);
         if(pmqLogFirst == NULL) {
             pmqLogFirst = tmpMessage;
@@ -71,19 +76,20 @@ void *commsEnablerFunc(void *vargp)
 {
     int result;
     while(!done) {
-        int sleepTime = 60;// check roughly every minute (will drift thanks to time a failing ping takes
+        int sleepTime = 60;// check roughly every minute (will drift thanks to time a failing ping takes)
         while(((sleepTime = sleep(sleepTime)) != 0) && !done) {}
-        result = system("ping 192.168.1.4 -c 1");
+        result = system("ping 192.168.1.4 -c 1 > /dev/null");
         if(result && !fEnableComms){ //need to enable comms
-            result = system("ping 192.168.1.1 -c 1")? 0: 1; //check router is up and we're connected to it
+            result = system("ping 192.168.1.1 -c 1 > /dev/null")? 0: 1; //check router is up and we're connected to it to avoid being triggered by network issues
             if(result){
                 fEnableComms = 1;
                 logdata("phone disappeared, enabling notifications\n");
             }
-        }else if(!result && fEnableComms){
+        }else if(!result && fEnableComms){//need to disable
             logdata("phone reappeared, disabling notifications\n");
             fEnableComms = 0;
         }
+        //other pairings of these flags don't require state trasition
     }
     return 0;
 }
@@ -92,12 +98,11 @@ void *commsEnablerFunc(void *vargp)
 #define FROM    "<aaron.frishling@gmail.com>"
 #define TO      "<aaron.frishling+SecuritySystem@gmail.com>"
  
+//email header
 static const char *payload_text = 
   //"Date: Mon, 29 Nov 2010 21:54:29 +1100\r\n",
   "To: " TO "\r\n" 
   "From: " FROM " (Example User)\r\n" 
-  //~ "Message-ID: <dcd7cb36-11db-487a-9f3a-e652a9458efd@"
-  //~ "rfcpedant.example.org>\r\n",
   "Subject: Security system alert\r\n" 
   "\r\n"; /* empty line to divide headers from body, see RFC5322 */ 
 
@@ -109,19 +114,19 @@ static size_t payload_source(void *ptr, size_t size, size_t nmemb, void *userp)
         return 0;
     }
 
-    if(queue->message[0]){ //header not sent
+    if(queue->message[0]){ //email header not sent
         size_t len = strlen(queue->message);
         memcpy(ptr, queue->message, len);
         queue->message[0] = 0;
         return len;
     }
     
-    if(queue->next == NULL){//all entries sent
+    if(queue->next == NULL){//all log entries sent
         free(queue);
         return 0;
     }
 
-    //more message queue entries to get through
+    //more message queue entries to get send through
     size_t len = strlen(queue->next->message);
     memcpy(ptr, queue->next->message, len);
     struct MessageQueue *remove = queue->next;
@@ -137,41 +142,37 @@ void *emailerFunc(void *vargp)
 {
     while(!done) {
         int sleepTime = 60;// check roughly every minute
-        struct MessageQueue *mFirst, *mLast, *mSend;
-        
+        struct MessageQueue *mFirst/*, *mLast*/, *mSend;
         while(((sleepTime = sleep(sleepTime)) != 0) && !done) {}
         
-        if(pmqLogFirst != NULL) { //if there's messages, remove them from the list ASAP
+        if(pmqLogFirst != NULL) { //if there's messages, remove them from the list ASAP and then prepare for sending
             pthread_mutex_lock(&muLog);
             mFirst = pmqLogFirst;
-            mLast = pmqLogLast;
+            //mLast = pmqLogLast;
             pmqLogFirst = NULL;
             pmqLogLast = NULL;
             pthread_mutex_unlock(&muLog);
             
             printf("sending log... ");
             
-            //and then we can take our time sending them
+            //we can take our time sending them
             //build the message queue to send
             mSend = malloc(sizeof(struct MessageQueue));
             strcpy(mSend->message, payload_text);
             mSend->next = mFirst;
-            
-            //to be implemented
 
+            //emailing code from https://curl.haxx.se/libcurl/c/smtp-tls.html
             CURL *curl;
             CURLcode res = CURLE_OK;
             struct curl_slist *recipients = NULL;
             curl = curl_easy_init();
             if(curl) {
                 curl_easy_setopt(curl, CURLOPT_USERNAME, "aaron.frishling@gmail.com");
-    curl_easy_setopt(curl, CURLOPT_PASSWORD, "");
+                curl_easy_setopt(curl, CURLOPT_PASSWORD, emailPassword);
  
                 curl_easy_setopt(curl, CURLOPT_URL, "smtp://smtp.gmail.com:587");
-                //~ curl_easy_setopt(curl, CURLOPT_URL, "smtp://aspmx.l.google.com:587");
                 curl_easy_setopt(curl, CURLOPT_USE_SSL, (long)CURLUSESSL_ALL);
  
-                //~ curl_easy_setopt(curl, CURLOPT_CAINFO, "/home/adf/DasMonitor/GTSR2.crt");
                 curl_easy_setopt(curl, CURLOPT_CAINFO, "/etc/ssl/certs/ca-certificates.crt");
  
                 recipients = curl_slist_append(recipients, TO);
@@ -213,13 +214,13 @@ int frameLen;
 //interestingly, situations where frames weren't getting received correctly (either unrecognised data or button press data differing) has also no real effect on these messages
 //Makes me pretty confident these are something weird about syncing frames, although maybe I'd get a different result if I atomically collected the data and clock bits
 int frameInv[MAX_FRAME_BYTES];
-int frameInvLen;
+int frameInvLen; 
 // maybe I was a numpty - if I'm not grabbing the data pin simultaneously with the clock, probably better to grab it beforehand
 // on inspection, it did not matter - we get the same data being read for clock returning to 0 either side (meaning it's just garbage) and get similar kinds of garbage on clock going high as we do from any time reading the down track
 int framePre[MAX_FRAME_BYTES];
 int frameInvPre[MAX_FRAME_BYTES];
 
-// wait until new frame starts, grab it, return if apparently received OK
+// wait until new frame starts, grab it, return amount of bits collected. Frames are delimited by time since there aren't any stop/start bits and this way we can handle random delays
 int getNextFrame()
 {
     //init
@@ -285,6 +286,7 @@ int getNextFrame()
     return cBits;
 }
 
+//copy the contents of a data frame
 void copyFrame(int dst[], int src[])
 {
     for(int i=0;i<MAX_FRAME_BYTES;i++){
@@ -292,6 +294,7 @@ void copyFrame(int dst[], int src[])
     }
 }
 
+//ocasionally useful utility func - compare prefixes of received data frames
 int framesEqual(int left[], int right[], int length)
 {
     if(length > MAX_FRAME_BYTES) length = MAX_FRAME_BYTES;
@@ -303,6 +306,8 @@ int framesEqual(int left[], int right[], int length)
     return 1;
 }
 
+
+//returns the ascii char for a button from a number
 char button2toChar(int button)
 {
     if(button < 1 || button >12) return 'x';
@@ -312,8 +317,7 @@ char button2toChar(int button)
     return (char)(((int)'0') + button);
 }
 
-char sZones[9]; 
-
+//returns the ascii char for a zone from the bitmask format. If more than one, returns the lowest-numbered
 char zone2Char(int zone)
 {
     for(int i = 1; i < 9; i++) {
@@ -325,6 +329,9 @@ char zone2Char(int zone)
     return 'x';
 }
 
+char sZones[9]; //using static allocation, because easier
+
+//converts all zone lights to a nice bitmask
 void zones2String (int zones)
 {
     for(int i = 0; i < 8; i++) {
@@ -338,8 +345,10 @@ void zones2String (int zones)
     sZones[9] = '\0';
 }
 
-char sOutputs[17];
+char sOutputs[17]; //using static allocation, because easier
 
+//not currently in use, but useful to have
+//converts all "outputs" from the main system board (zones, lights) as a nice bitmask
 void outputs2String (int outputs)
 {
     int outIdx = 0;
@@ -369,14 +378,9 @@ void outputs2String (int outputs)
     sOutputs[17] = '\0';
 }
 
-
-int unknownBytes[] = {0xff, 0xfe, 0xff, 0xff};
-
 int main (void)
 {
-    //init
-    //~ long lastTime;
-    //~ struct timeval tv;
+    //init everything
     int lastFrame[] = {0xff, 0xfe, 0xff, 0xff, 0x0, 0x7, 0x0, 0x0, 0x0, 0x0};
     int triggeredZones = 0, fTriggered = 0, fArmed=0;
     pthread_t tCommsEnabler, tEmailer; 
@@ -387,6 +391,7 @@ int main (void)
     pinMode (pin_sck, INPUT) ;
     pinMode (pin_rx, INPUT) ;
     logdata("let's go?\n");
+    //main processing loop - all of our frame-related code is here
     while (!done) {
         int result = getNextFrame();
         int fBadFrame = 0;
@@ -446,6 +451,7 @@ int main (void)
             fBadFrame = 1;
         }
         
+        //various experimental bits - trying to figure out if I should sample/transmit with slightly different timing relative to clk (thanks to data and clk not readint at same time)
         //~ if(!framesEqual(frame, frameInv, result >> 3)) {
             //~ printf("%d bits, %d bits, up: %x %x %x %x %x %x %x %x %x %x down: %x %x %x %x %x %x %x %x %x %x\n", frameLen, frameInvLen, frame[0], frame[1], frame[2], frame[3], frame[4], frame[5], frame[6], frame[7], frame[8], frame[9], frameInv[0], frameInv[1], frameInv[2], frameInv[3], frameInv[4], frameInv[5], frameInv[6], frameInv[7], frameInv[8], frameInv[9]);
         //~ }
@@ -457,6 +463,7 @@ int main (void)
             //~ printf("down: %d bits, post: %x %x %x %x %x %x %x %x %x %x pre: %x %x %x %x %x %x %x %x %x %x\n", frameInvLen, frameInv[0], frameInv[1], frameInv[2], frameInv[3], frameInv[4], frameInv[5], frameInv[6], frameInv[7], frameInv[8], frameInv[9], frameInvPre[0], frameInvPre[1], frameInvPre[2], frameInvPre[3], frameInvPre[4], frameInvPre[5], frameInvPre[6], frameInvPre[7], frameInvPre[8], frameInvPre[9]);
         //~ }
         
+        //and log if we had any issues with the frame for future reference
         if(fBadFrame) {
             logdata("%d bits, unrecognised data in frame: %x %x %x %x %x %x %x %x %x %x\n", result, frame[0], frame[1], frame[2], frame[3], frame[4], frame[5], frame[6], frame[7], frame[8], frame[9]);
             copyFrame(lastFrame, frame);
