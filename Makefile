@@ -7,7 +7,7 @@ bitbanger: bitbanger.c
 	gcc -Wall -o bitbanger bitbanger.c -lwiringPi
 
 framebanger: framebanger.c
-	gcc -Wall -o framebanger framebanger.c -lwiringPi
+	gcc -Wall -o framebanger framebanger.c -lwiringPi -lpthread -lcurl
 
 
 run: bitbanger
