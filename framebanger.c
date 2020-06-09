@@ -70,11 +70,92 @@ void sigintHandler(int sig_num)
     logdata("dying now\n");
 } 
 
+#define BYTES_PER_FRAME 6
+#define MAX_FRAME_BYTES BYTES_PER_FRAME +4
+//frame guard could probably be 150-200us, as long as it's a bit over 1/2 a cycle
+#define FRAME_GUARD_US 300
+int frame[MAX_FRAME_BYTES];
+int frameLen;
+
+//returns the ascii char for a button from a number
+char button2toChar(int button)
+{
+    if(button < 1 || button >12) return 'x';
+    if(button == 10) return  '*';
+    if(button == 11) return  '0';
+    if(button == 12) return  '#';
+    return (char)(((int)'0') + button);
+}
+
+//returns the ascii char for a zone from the bitmask format. If more than one, returns the lowest-numbered
+char zone2Char(int zone)
+{
+    for(int i = 1; i < 9; i++) {
+        if(zone & 0x80) {
+            return (char)(((int)'0') + i);
+        } 
+        zone <<= 1;
+    }
+    return 'x';
+}
+
+char sZones[9]; //using static allocation, because easier
+
+//converts all zone lights to a nice bitmask
+void zones2String (int zones)
+{
+    for(int i = 0; i < 8; i++) {
+        if(zones & 0x80) {
+            sZones[i] = (char)(((int)'0') + i+1);
+        } else {
+            sZones[i] = '-';
+        }
+        zones <<= 1;
+    }
+    sZones[9] = '\0';
+}
+
+char sOutputs[17]; //using static allocation, because easier
+
+//not currently in use, but useful to have
+//converts all "outputs" from the main system board (zones, lights) as a nice bitmask
+void outputs2String (int outputs)
+{
+    int outIdx = 0;
+    for(; outIdx < 4; outIdx++) { //4 bits I don't know
+        if(outputs & 0x80) {
+            sOutputs[outIdx] = '?';
+        } else {
+            sOutputs[outIdx] = '-';
+        }
+        outputs <<= 1;
+    }
+    sOutputs[4] = outputs & 0x80 ? 'a' : '-'; //either armed or partial lights?
+    outputs <<= 1;
+    for(; outIdx < 13; outIdx++) { //8 zones
+        if(outputs & 0x80) {
+            sOutputs[outIdx] = (char)(((int)'0') + outIdx-4);
+        } else {
+            sOutputs[outIdx] = '-';
+        }
+        outputs <<= 1;
+    }
+    sOutputs[14] = outputs & 0x80 ? 's' : '-'; //secure
+    outputs <<= 1;
+    sOutputs[15]= outputs & 0x80 ? 'o' : '-'; // unknown, but probably AC ON
+    outputs <<= 1;
+    sOutputs[16]= outputs & 0x80 ? '-' : 't'; // tone/ringer, inverted output
+    sOutputs[17] = '\0';
+}
+
+
+#define MAX_PING_FAILS 2
 //this is how we detect whether we should be sending interesting log data somewhere other than stdout
 //current implementation is to detect whether their phone is still connected to the home network
 void *commsEnablerFunc(void *vargp)
 {
     int result;
+    static int cPingFails = 0;
     while(!done) {
         int sleepTime = 60;// check roughly every minute (will drift thanks to time a failing ping takes)
         while(((sleepTime = sleep(sleepTime)) != 0) && !done) {}
@@ -82,12 +163,18 @@ void *commsEnablerFunc(void *vargp)
         if(result && !fEnableComms){ //need to enable comms
             result = system("ping 192.168.1.1 -c 1 > /dev/null")? 0: 1; //check router is up and we're connected to it to avoid being triggered by network issues
             if(result){
-                fEnableComms = 1;
-                logdata("phone disappeared, enabling notifications\n");
+                cPingFails++; //takes multiple fails to enable output
+                if(cPingFails >= MAX_PING_FAILS){
+                    fEnableComms = 1;
+                    outputs2String((frame[4] << 8) | frame[5]);
+                    logdata("phone disappeared, enabling notifications. Probably %s output state %s\n", (frameLen == BYTES_PER_FRAME * 8)?"good":"bad", sOutputs);
+                }
             }
         }else if(!result && fEnableComms){//need to disable
-            logdata("phone reappeared, disabling notifications\n");
+            outputs2String((frame[4] << 8) | frame[5]);
+            logdata("phone reappeared, disabling notifications. Probably %s output state %s\n", (frameLen == BYTES_PER_FRAME * 8)?"good":"bad", sOutputs);
             fEnableComms = 0;
+            cPingFails = 0;
         }
         //other pairings of these flags don't require state trasition
     }
@@ -135,13 +222,12 @@ static size_t payload_source(void *ptr, size_t size, size_t nmemb, void *userp)
 
     return len;
 }
- 
 
 //one of our ways to send out interesting logs - email the owner
 void *emailerFunc(void *vargp)
 {
     while(!done) {
-        int sleepTime = 60;// check roughly every minute
+        int sleepTime = 300;// check roughly every 5 minutes
         struct MessageQueue *mFirst/*, *mLast*/, *mSend;
         while(((sleepTime = sleep(sleepTime)) != 0) && !done) {}
         
@@ -194,12 +280,6 @@ void *emailerFunc(void *vargp)
     return 0;
 }
 
-#define BYTES_PER_FRAME 6
-#define MAX_FRAME_BYTES BYTES_PER_FRAME +4
-//frame guard could probably be 150-200us, as long as it's a bit over 1/2 a cycle
-#define FRAME_GUARD_US 300
-int frame[MAX_FRAME_BYTES];
-int frameLen;
 //is there something different about up/down clock? Would make sense for one to be master and the other slave
 //interestingly, with just recording down signal at "idle" we have interesting phenomena:
 // - each time we start a logging run, we get different output from down. It's like we're consistently out of synch by the same amount since it doesn't change within captures, only between them (and there's some patterns that seem to come up multiple times)
@@ -232,6 +312,7 @@ int getNextFrame()
     }
     gettimeofday(&tv, NULL);
     tLastHigh = tv.tv_usec;
+    frameLen = 0;
     frameInvLen = 0;
     //main work
     while(1) {
@@ -306,77 +387,6 @@ int framesEqual(int left[], int right[], int length)
     return 1;
 }
 
-
-//returns the ascii char for a button from a number
-char button2toChar(int button)
-{
-    if(button < 1 || button >12) return 'x';
-    if(button == 10) return  '*';
-    if(button == 11) return  '0';
-    if(button == 12) return  '#';
-    return (char)(((int)'0') + button);
-}
-
-//returns the ascii char for a zone from the bitmask format. If more than one, returns the lowest-numbered
-char zone2Char(int zone)
-{
-    for(int i = 1; i < 9; i++) {
-        if(zone & 0x80) {
-            return (char)(((int)'0') + i);
-        } 
-        zone <<= 1;
-    }
-    return 'x';
-}
-
-char sZones[9]; //using static allocation, because easier
-
-//converts all zone lights to a nice bitmask
-void zones2String (int zones)
-{
-    for(int i = 0; i < 8; i++) {
-        if(zones & 0x80) {
-            sZones[i] = (char)(((int)'0') + i+1);
-        } else {
-            sZones[i] = '-';
-        }
-        zones <<= 1;
-    }
-    sZones[9] = '\0';
-}
-
-char sOutputs[17]; //using static allocation, because easier
-
-//not currently in use, but useful to have
-//converts all "outputs" from the main system board (zones, lights) as a nice bitmask
-void outputs2String (int outputs)
-{
-    int outIdx = 0;
-    for(; outIdx < 4; outIdx++) { //4 bits I don't know
-        if(outputs & 0x80) {
-            sOutputs[outIdx] = '?';
-        } else {
-            sOutputs[outIdx] = '-';
-        }
-        outputs <<= 1;
-    }
-    sOutputs[14] = outputs & 0x80 ? 'a' : '-'; //either armed or partial lights?
-    outputs <<= 1;
-    for(; outIdx < 13; outIdx++) { //8 zones
-        if(outputs & 0x80) {
-            sOutputs[outIdx] = (char)(((int)'0') + outIdx-4);
-        } else {
-            sOutputs[outIdx] = '-';
-        }
-        outputs <<= 1;
-    }
-    sOutputs[14] = outputs & 0x80 ? 's' : '-'; //secure
-    outputs <<= 1;
-    sOutputs[15]= outputs & 0x80 ? 'o' : '-'; // unknown, but probably AC ON
-    outputs <<= 1;
-    sOutputs[16]= outputs & 0x80 ? '-' : 't'; // tone/ringer, inverted output
-    sOutputs[17] = '\0';
-}
 
 int main (void)
 {
