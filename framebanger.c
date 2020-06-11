@@ -191,12 +191,14 @@ void *commsEnablerFunc(void *vargp)
 #define FROM    "<aaron.frishling@gmail.com>"
 #define TO      "<aaron.frishling+SecuritySystem@gmail.com>"
  
+
 //email header
+//may want to parameterize so we can do dates, hopefully we can trick gmail into threadin these without including message IDs
 static const char *payload_text = 
   //"Date: Mon, 29 Nov 2010 21:54:29 +1100\r\n",
   "To: " TO "\r\n" 
   "From: " FROM " (Example User)\r\n" 
-  "Subject: Security system alert\r\n" 
+  "Subject: RE: [SSA]\r\n" 
   "\r\n"; /* empty line to divide headers from body, see RFC5322 */ 
 
 static size_t payload_source(void *ptr, size_t size, size_t nmemb, void *userp)
