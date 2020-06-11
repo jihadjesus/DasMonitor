@@ -157,7 +157,7 @@ void outputs2String (int outputs)
 }
 
 
-#define MAX_PING_FAILS 2
+#define MAX_PING_FAILS 3
 //this is how we detect whether we should be sending interesting log data somewhere other than stdout
 //current implementation is to detect whether their phone is still connected to the home network
 void *commsEnablerFunc(void *vargp)
@@ -174,13 +174,11 @@ void *commsEnablerFunc(void *vargp)
                 cPingFails++; //takes multiple fails to enable output
                 if(cPingFails >= MAX_PING_FAILS){
                     fEnableComms = 1;
-                    outputs2String((frame[4] << 8) | frame[5]);
-                    logdata(LOG_IMPORTANT, "phone disappeared, enabling notifications. Probably %s output state %s\n", (frameLen == BYTES_PER_FRAME * 8)?"good":"bad", sOutputs);
+                    logdata(LOG_IMPORTANT, "phone disappeared, enabling notifications. Probably %s output state %s\n", (frameLen == 0)?"good":"bad", sOutputs);
                 }
             }
         }else if(!result && fEnableComms){//need to disable
-            outputs2String((frame[4] << 8) | frame[5]);
-            logdata(LOG_IMPORTANT, "phone reappeared, disabling notifications. Probably %s output state %s\n", (frameLen == BYTES_PER_FRAME * 8)?"good":"bad", sOutputs);
+            logdata(LOG_IMPORTANT, "phone reappeared, disabling notifications. Probably %s output state %s\n", (frameLen == 0)?"good":"bad", sOutputs);
             fEnableComms = 0;
             cPingFails = 0;
         }
@@ -417,6 +415,7 @@ int main (void)
             int buttons1 = (frame[0] << 8) | frame[1]; 
             int buttons2 = (frame[2] << 8) | frame[3];
             int outputs = (frame[4] << 8) | frame[5]; //seem to be the parts with data going to the keypads
+            outputs2String(outputs);
             if(!(buttons1 == 0xfffe && buttons2 == 0xffff)) { // buttons being pressed
                 if(((buttons1 & 0x003f) !=0x003e) || ((buttons2 & 0x8007) != 0x8007)){// check unknown bits are in their common state
                     fBadFrame = 1;
