@@ -30,8 +30,14 @@ struct MessageQueue *pmqLogFirst = NULL;
 struct MessageQueue *pmqLogLast = NULL;
 int fEnableComms = 0;
 
+#define LOG_DEBUG 0
+#define LOG_INFO 1
+#define LOG_IMPORTANT 2
+#define LOG_LEVEL_EMAIL 2
+#define LOG_LEVEL_PRINTF 0
+
 //pretty self-explanaory
-void logdata(const char * format, ...)
+void logdata(int level, const char * format, ...)
 {
     //init
     time_t rawtime;
@@ -46,8 +52,10 @@ void logdata(const char * format, ...)
     va_start (args, format);
     vsprintf (tmpMessage->message +written, format, args);
     va_end (args);
-    printf(tmpMessage->message); //send to stdout
-    if(fEnableComms) { //add the message to the email queue.
+    if(level >= LOG_LEVEL_PRINTF) {
+        printf(tmpMessage->message); //send to stdout
+    }
+    if(fEnableComms && level >= LOG_LEVEL_EMAIL) { //add the message to the email queue.
         pthread_mutex_lock(&muLog);
         if(pmqLogFirst == NULL) {
             pmqLogFirst = tmpMessage;
@@ -67,7 +75,7 @@ int done = 0;
 void sigintHandler(int sig_num) 
 { 
     done = 1;
-    logdata("dying now\n");
+    logdata(LOG_IMPORTANT, "dying now\n");
 } 
 
 #define BYTES_PER_FRAME 6
@@ -167,12 +175,12 @@ void *commsEnablerFunc(void *vargp)
                 if(cPingFails >= MAX_PING_FAILS){
                     fEnableComms = 1;
                     outputs2String((frame[4] << 8) | frame[5]);
-                    logdata("phone disappeared, enabling notifications. Probably %s output state %s\n", (frameLen == BYTES_PER_FRAME * 8)?"good":"bad", sOutputs);
+                    logdata(LOG_IMPORTANT, "phone disappeared, enabling notifications. Probably %s output state %s\n", (frameLen == BYTES_PER_FRAME * 8)?"good":"bad", sOutputs);
                 }
             }
         }else if(!result && fEnableComms){//need to disable
             outputs2String((frame[4] << 8) | frame[5]);
-            logdata("phone reappeared, disabling notifications. Probably %s output state %s\n", (frameLen == BYTES_PER_FRAME * 8)?"good":"bad", sOutputs);
+            logdata(LOG_IMPORTANT, "phone reappeared, disabling notifications. Probably %s output state %s\n", (frameLen == BYTES_PER_FRAME * 8)?"good":"bad", sOutputs);
             fEnableComms = 0;
             cPingFails = 0;
         }
@@ -400,7 +408,7 @@ int main (void)
     wiringPiSetupPhys () ;
     pinMode (pin_sck, INPUT) ;
     pinMode (pin_rx, INPUT) ;
-    logdata("let's go?\n");
+    logdata(LOG_INFO, "let's go?\n");
     //main processing loop - all of our frame-related code is here
     while (!done) {
         int result = getNextFrame();
@@ -420,7 +428,7 @@ int main (void)
                             int shift = digit < 4 ? 0 : digit -3;
                             int buttons1tmp = (0x7fff >> shift) & 0xfffe;
                             fBadFrame = buttons1 != buttons1tmp;
-                            logdata("button '%c' pressed according to field 2, %s with field 1\n", button2toChar(digit), fBadFrame? "disagrees" : "agrees");
+                            logdata(LOG_IMPORTANT, "button '%c' pressed according to field 2, %s with field 1\n", button2toChar(digit), fBadFrame? "disagrees" : "agrees");
                         }
                     }
                 }
@@ -429,28 +437,28 @@ int main (void)
                     fBadFrame = 1;
                 } else {
                     if(outputs & 0x800 & !fArmed) {
-                        logdata("system has been armed\n");
+                        logdata(LOG_IMPORTANT, "system has been armed\n");
                         fArmed = 1;
                     } else {
                         if(fArmed) {
-                            logdata("returning from armed\n");
+                            logdata(LOG_IMPORTANT, "returning from armed\n");
                             fArmed = 0;
                         }
                         if(outputs & 4) { //secure
                             if(fTriggered){
                                 zones2String(triggeredZones);
-                                logdata("returned to secure, all zones triggered %s\n", sZones);
+                                logdata(LOG_IMPORTANT, "returned to secure, all zones triggered %s\n", sZones);
                                 triggeredZones = 0;
                                 fTriggered = 0;
                             }
                         } else { //somethign happening
                             if(!fTriggered) {
-                                logdata("zones are getting triggered\n");
+                                logdata(LOG_IMPORTANT, "zones are getting triggered\n");
                                 fTriggered = 1;
                             }
                             int newTriggered = 0xff & (outputs >> 3);
                             if((newTriggered & triggeredZones) != newTriggered) {
-                                logdata(" triggered new zone %c\n", zone2Char((newTriggered & triggeredZones) ^ newTriggered));
+                                logdata(LOG_IMPORTANT, " triggered new zone %c\n", zone2Char((newTriggered & triggeredZones) ^ newTriggered));
                                 triggeredZones|=newTriggered;
                             }
                         }
@@ -475,7 +483,7 @@ int main (void)
         
         //and log if we had any issues with the frame for future reference
         if(fBadFrame) {
-            logdata("%d bits, unrecognised data in frame: %x %x %x %x %x %x %x %x %x %x\n", result, frame[0], frame[1], frame[2], frame[3], frame[4], frame[5], frame[6], frame[7], frame[8], frame[9]);
+            logdata(LOG_DEBUG, "%d bits, unrecognised data in frame: %x %x %x %x %x %x %x %x %x %x\n", result, frame[0], frame[1], frame[2], frame[3], frame[4], frame[5], frame[6], frame[7], frame[8], frame[9]);
             copyFrame(lastFrame, frame);
         }
         
