@@ -1,89 +1,21 @@
 #include <wiringPi.h> //hw access
 #include <sys/time.h> //usec-granularity time
-#include <time.h> //regular-granularity time
 #include <stdio.h> //io
 #include <stddef.h>
 #include <signal.h>  //signal handling
-#include <stdarg.h>
-#include <unistd.h>  //Header file for sleep(). man 3 sleep for details. 
-#include <pthread.h> //threading
-#include <stdlib.h> //system()
-#include <curl/curl.h> //smtp   
-#include <string.h> //string copy/cat
-#include "secrets.h" //put passwords in a header file until we can be bothered parsing config files
+#include <pthread.h> //threading, mutexes
+//#include "secrets.h" //put passwords in a header file until we can be bothered parsing config files
 
-
-//the data pins we're using on the OPi, PA14=23, PA15=19, PA16=21
-#define pin_sck 23
-#define pin_rx 21
-#define pin_tx 19
-
-//things relevant to external logging/notification
-//only need to travers the list in one direction, but need to be able to append. ALso need to add and clear list atomically
-struct MessageQueue
-{
-    struct MessageQueue *next;
-    char message[500]; //longer than a single message line will ever be
-};
-pthread_mutex_t muLog = PTHREAD_MUTEX_INITIALIZER;
-struct MessageQueue *pmqLogFirst = NULL;
-struct MessageQueue *pmqLogLast = NULL;
-int fEnableComms = 0;
-
-#define LOG_DEBUG 0
-#define LOG_INFO 1
-#define LOG_IMPORTANT 2
-#define LOG_LEVEL_EMAIL 2
-#define LOG_LEVEL_PRINTF 0
-
-//pretty self-explanaory
-void logdata(int level, const char * format, ...)
-{
-    //init
-    time_t rawtime;
-    struct tm * timeinfo;
-    struct MessageQueue *tmpMessage = malloc(sizeof(struct MessageQueue));
-    //collect the time
-    time ( &rawtime );
-    timeinfo = localtime ( &rawtime );
-    int written = sprintf(tmpMessage->message, "[%d %d %d %d:%d:%d]", timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday, timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
-    //collect the actual input
-    va_list args;
-    va_start (args, format);
-    vsprintf (tmpMessage->message +written, format, args);
-    va_end (args);
-    if(level >= LOG_LEVEL_PRINTF) {
-        printf(tmpMessage->message); //send to stdout
-    }
-    if(fEnableComms && level >= LOG_LEVEL_EMAIL) { //add the message to the email queue.
-        pthread_mutex_lock(&muLog);
-        if(pmqLogFirst == NULL) {
-            pmqLogFirst = tmpMessage;
-        }else{
-            pmqLogLast->next = tmpMessage;
-        }
-        pmqLogLast = tmpMessage;
-        tmpMessage->next = NULL;
-        pthread_mutex_unlock(&muLog);
-    }else{
-        free(tmpMessage);
-    }
-}
+#include "logging.h"
+#include "dasmonitor.h"
+#include "config.h"
 
 //die nicely
-int done = 0;
 void sigintHandler(int sig_num) 
 { 
     done = 1;
     logdata(LOG_IMPORTANT, "dying now\n");
 } 
-
-#define BYTES_PER_FRAME 6
-#define MAX_FRAME_BYTES BYTES_PER_FRAME +4
-//frame guard could probably be 150-200us, as long as it's a bit over 1/2 a cycle
-#define FRAME_GUARD_US 300
-int frame[MAX_FRAME_BYTES];
-int frameLen;
 
 //returns the ascii char for a button from a number
 char button2toChar(int button)
@@ -107,8 +39,6 @@ char zone2Char(int zone)
     return 'x';
 }
 
-char sZones[9]; //using static allocation, because easier
-
 //converts all zone lights to a nice bitmask
 void zones2String (int zones)
 {
@@ -123,9 +53,6 @@ void zones2String (int zones)
     sZones[9] = '\0';
 }
 
-char sOutputs[17]; //using static allocation, because easier
-
-//not currently in use, but useful to have
 //converts all "outputs" from the main system board (zones, lights) as a nice bitmask
 void outputs2String (int outputs)
 {
@@ -157,136 +84,6 @@ void outputs2String (int outputs)
 }
 
 
-#define MAX_PING_FAILS 3
-//this is how we detect whether we should be sending interesting log data somewhere other than stdout
-//current implementation is to detect whether their phone is still connected to the home network
-void *commsEnablerFunc(void *vargp)
-{
-    int result;
-    static int cPingFails = 0;
-    while(!done) {
-        int sleepTime = 60;// check roughly every minute (will drift thanks to time a failing ping takes)
-        while(((sleepTime = sleep(sleepTime)) != 0) && !done) {}
-        result = system("ping 192.168.1.4 -c 1 > /dev/null");
-        if(result && !fEnableComms){ //need to enable comms
-            result = system("ping 192.168.1.1 -c 1 > /dev/null")? 0: 1; //check router is up and we're connected to it to avoid being triggered by network issues
-            if(result){
-                cPingFails++; //takes multiple fails to enable output
-                if(cPingFails >= MAX_PING_FAILS){
-                    fEnableComms = 1;
-                    logdata(LOG_IMPORTANT, "phone disappeared, enabling notifications. Probably %s output state %s\n", (frameLen == 0)?"good":"bad", sOutputs);
-                }
-            }
-        }else if(!result && fEnableComms){//need to disable
-            logdata(LOG_IMPORTANT, "phone reappeared, disabling notifications. Probably %s output state %s\n", (frameLen == 0)?"good":"bad", sOutputs);
-            fEnableComms = 0;
-            cPingFails = 0;
-        }
-        //other pairings of these flags don't require state trasition
-    }
-    return 0;
-}
-
-//emailing based on https://curl.haxx.se/libcurl/c/smtp-tls.html
-#define FROM    "<aaron.frishling@gmail.com>"
-#define TO      "<aaron.frishling+SecuritySystem@gmail.com>"
- 
-
-//email header
-//may want to parameterize so we can do dates, hopefully we can trick gmail into threadin these without including message IDs
-static const char *payload_text = 
-  //"Date: Mon, 29 Nov 2010 21:54:29 +1100\r\n",
-  "To: " TO "\r\n" 
-  "From: " FROM " (Example User)\r\n" 
-  "Subject: RE: [SSA]\r\n" 
-  "\r\n"; /* empty line to divide headers from body, see RFC5322 */ 
-
-static size_t payload_source(void *ptr, size_t size, size_t nmemb, void *userp)
-{
-    struct MessageQueue *queue = (struct MessageQueue *)userp;
-
-    if((size == 0) || (nmemb == 0) || ((size*nmemb) < 1)) {
-        return 0;
-    }
-
-    if(queue->message[0]){ //email header not sent
-        size_t len = strlen(queue->message);
-        memcpy(ptr, queue->message, len);
-        queue->message[0] = 0;
-        return len;
-    }
-    
-    if(queue->next == NULL){//all log entries sent
-        free(queue);
-        return 0;
-    }
-
-    //more message queue entries to get send through
-    size_t len = strlen(queue->next->message);
-    memcpy(ptr, queue->next->message, len);
-    struct MessageQueue *remove = queue->next;
-    queue->next = remove->next;
-    free(remove);
-
-    return len;
-}
-
-//one of our ways to send out interesting logs - email the owner
-void *emailerFunc(void *vargp)
-{
-    while(!done) {
-        int sleepTime = 300;// check roughly every 5 minutes
-        struct MessageQueue *mFirst/*, *mLast*/, *mSend;
-        while(((sleepTime = sleep(sleepTime)) != 0) && !done) {}
-        
-        if(pmqLogFirst != NULL) { //if there's messages, remove them from the list ASAP and then prepare for sending
-            pthread_mutex_lock(&muLog);
-            mFirst = pmqLogFirst;
-            //mLast = pmqLogLast;
-            pmqLogFirst = NULL;
-            pmqLogLast = NULL;
-            pthread_mutex_unlock(&muLog);
-            
-            printf("sending log... ");
-            
-            //we can take our time sending them
-            //build the message queue to send
-            mSend = malloc(sizeof(struct MessageQueue));
-            strcpy(mSend->message, payload_text);
-            mSend->next = mFirst;
-
-            //emailing code from https://curl.haxx.se/libcurl/c/smtp-tls.html
-            CURL *curl;
-            CURLcode res = CURLE_OK;
-            struct curl_slist *recipients = NULL;
-            curl = curl_easy_init();
-            if(curl) {
-                curl_easy_setopt(curl, CURLOPT_USERNAME, "aaron.frishling@gmail.com");
-                curl_easy_setopt(curl, CURLOPT_PASSWORD, emailPassword);
- 
-                curl_easy_setopt(curl, CURLOPT_URL, "smtp://smtp.gmail.com:587");
-                curl_easy_setopt(curl, CURLOPT_USE_SSL, (long)CURLUSESSL_ALL);
- 
-                curl_easy_setopt(curl, CURLOPT_CAINFO, "/etc/ssl/certs/ca-certificates.crt");
- 
-                recipients = curl_slist_append(recipients, TO);
-                curl_easy_setopt(curl, CURLOPT_MAIL_RCPT, recipients);
-                
-                curl_easy_setopt(curl, CURLOPT_READFUNCTION, payload_source);
-                curl_easy_setopt(curl, CURLOPT_READDATA, mSend);
-                curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
-                //~ curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-     
-                res = curl_easy_perform(curl);
-                if(res != CURLE_OK) { fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res)); }
-                curl_slist_free_all(recipients);
-                curl_easy_cleanup(curl);
-            }
-            printf("... complete/n");
-        }
-    }
-    return 0;
-}
 
 //is there something different about up/down clock? Would make sense for one to be master and the other slave
 //interestingly, with just recording down signal at "idle" we have interesting phenomena:
@@ -402,6 +199,7 @@ int main (void)
     int lastFrame[] = {0xff, 0xfe, 0xff, 0xff, 0x0, 0x7, 0x0, 0x0, 0x0, 0x0};
     int triggeredZones = 0, fTriggered = 0, fArmed=0;
     pthread_t tCommsEnabler, tEmailer; 
+    done = 0;
     signal(SIGINT, sigintHandler); 
     pthread_create(&tCommsEnabler, NULL, commsEnablerFunc, NULL); 
     pthread_create(&tEmailer, NULL, emailerFunc, NULL); 

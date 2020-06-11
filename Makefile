@@ -1,4 +1,10 @@
-DEFAULT: framebanger
+CC=gcc
+CFLAGS=-I.
+DEPS = hellomake.h
+OBJ = hellomake.o hellofunc.o 
+
+
+DEFAULT: dasmonitor
 
 bitbangtest: bitbangtest.c
 	gcc -Wall -o bitbangtest bitbangtest.c -lwiringPi
@@ -6,14 +12,17 @@ bitbangtest: bitbangtest.c
 bitbanger: bitbanger.c
 	gcc -Wall -o bitbanger bitbanger.c -lwiringPi
 
-framebanger: framebanger.c
-	gcc -Wall -o framebanger framebanger.c -lwiringPi -lpthread -lcurl
+logging.o: logging.c logging.h dasmonitor.h config.h secrets.h
+	gcc -Wall -c -o logging.o logging.c -lpthread -lcurl
+
+dasmonitor: dasmonitor.c dasmonitor.h config.h logging.h logging.o
+	gcc -Wall -o dasmonitor dasmonitor.c logging.o -lwiringPi -lpthread -lcurl
 
 xmit: 
 	scp *.c Makefile *.h 192.168.1.7:DasMonitor
 
 remotebuild: xmit
-	ssh 192.168.1.7 "cd DasMonitor; make framebanger"
+	ssh 192.168.1.7 "cd DasMonitor; make dasmonitor"
 
-run: bitbanger
+test: bitbanger
 	sudo ./bitbanger
