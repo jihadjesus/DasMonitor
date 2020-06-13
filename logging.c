@@ -58,12 +58,12 @@ void *commsEnablerFunc(void *vargp)
     while(!done) {
         int sleepTime = 60;// check roughly every minute (will drift thanks to time a failing ping takes)
         while(((sleepTime = sleep(sleepTime)) != 0) && !done) {}
-        result = system("ping 192.168.1.4 -c 1 > /dev/null");
+        result = system("ping " PING_USER_TARGET " -c 2 > /dev/null");
         if(result && !fEnableComms){ //need to enable comms
-            result = system("ping 192.168.1.1 -c 1 > /dev/null")? 0: 1; //check router is up and we're connected to it to avoid being triggered by network issues
+            result = system("ping " PING_CHECK_TARGET " -c 2 > /dev/null")? 0: 1; //check router is up and we're connected to it to avoid being triggered by network issues
             if(result){
                 cPingFails++; //takes multiple fails to enable output
-                if(cPingFails >= MAX_PING_FAILS){
+                if(cPingFails >= PING_MAX_FAILS){
                     fEnableComms = 1;
                     logdata(LOG_IMPORTANT, "phone disappeared, enabling notifications. Probably %s output state %s\n", (frameLen == 0)?"good":"bad", sOutputs);
                 }
@@ -85,7 +85,7 @@ static const char *payload_text =
   //"Date: Mon, 29 Nov 2010 21:54:29 +1100\r\n",
   "To: " EMAIL_TO "\r\n" 
   "From: " EMAIL_FROM " (Example User)\r\n" 
-  "Subject: RE: [SSA]\r\n" 
+  "Subject: " EMAIL_SUBJECT "\r\n" 
   "\r\n"; /* empty line to divide headers from body, see RFC5322 */ 
 
 static size_t payload_source(void *ptr, size_t size, size_t nmemb, void *userp)
@@ -148,10 +148,10 @@ void *emailerFunc(void *vargp)
             struct curl_slist *recipients = NULL;
             curl = curl_easy_init();
             if(curl) {
-                curl_easy_setopt(curl, CURLOPT_USERNAME, "aaron.frishling@gmail.com");
+                curl_easy_setopt(curl, CURLOPT_USERNAME, EMAIL_USER);
                 curl_easy_setopt(curl, CURLOPT_PASSWORD, emailPassword);
  
-                curl_easy_setopt(curl, CURLOPT_URL, "smtp://smtp.gmail.com:587");
+                curl_easy_setopt(curl, CURLOPT_URL, EMAIL_SERVER_URL);
                 curl_easy_setopt(curl, CURLOPT_USE_SSL, (long)CURLUSESSL_ALL);
  
                 curl_easy_setopt(curl, CURLOPT_CAINFO, "/etc/ssl/certs/ca-certificates.crt");
