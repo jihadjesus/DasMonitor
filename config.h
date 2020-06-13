@@ -2,6 +2,7 @@
 //details for notification emails
 #define EMAIL_FROM "<aaron.frishling@gmail.com>"
 #define EMAIL_TO "<aaron.frishling+SecuritySystem@gmail.com>"
+//#define EMAIL_CC "<aaron.frishling@gmail.com>"
 #define EMAIL_SUBJECT "RE: [SSA]"
 #define EMAIL_USER "aaron.frishling@gmail.com"
 #define EMAIL_SERVER_URL "smtp://smtp.gmail.com:587"

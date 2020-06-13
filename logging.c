@@ -84,7 +84,10 @@ void *commsEnablerFunc(void *vargp)
 static const char *payload_text = 
   //"Date: Mon, 29 Nov 2010 21:54:29 +1100\r\n",
   "To: " EMAIL_TO "\r\n" 
-  "From: " EMAIL_FROM " (Example User)\r\n" 
+#ifdef EMAIL_CC
+  "CC: " EMAIL_CC "\r\n" 
+#endif
+  "From: " EMAIL_FROM " (SSA)\r\n" 
   "Subject: " EMAIL_SUBJECT "\r\n" 
   "\r\n"; /* empty line to divide headers from body, see RFC5322 */ 
 
@@ -157,6 +160,9 @@ void *emailerFunc(void *vargp)
                 curl_easy_setopt(curl, CURLOPT_CAINFO, "/etc/ssl/certs/ca-certificates.crt");
  
                 recipients = curl_slist_append(recipients, EMAIL_TO);
+#ifdef EMAIL_CC
+                recipients = curl_slist_append(recipients, EMAIL_CC);
+#endif
                 curl_easy_setopt(curl, CURLOPT_MAIL_RCPT, recipients);
                 
                 curl_easy_setopt(curl, CURLOPT_READFUNCTION, payload_source);
