@@ -27,11 +27,12 @@ char button2toChar(int button)
     return (char)(((int)'0') + button);
 }
 
+#define HIGH_BIT_INT8(x) (x & 0x80)
 //returns the ascii char for a zone from the bitmask format. If more than one, returns the lowest-numbered
 char zone2Char(int zone)
 {
     for(int i = 1; i < 9; i++) {
-        if(zone & 0x80) {
+        if(HIGH_BIT_INT8(zone)) {
             return (char)(((int)'0') + i);
         } 
         zone <<= 1;
@@ -43,7 +44,7 @@ char zone2Char(int zone)
 void zones2String (int zones)
 {
     for(int i = 0; i < 8; i++) {
-        if(zones & 0x80) {
+        if(HIGH_BIT_INT8(zones)) {
             sZones[i] = (char)(((int)'0') + i+1);
         } else {
             sZones[i] = '-';
@@ -53,37 +54,36 @@ void zones2String (int zones)
     sZones[9] = '\0';
 }
 
+#define HIGH_BIT_INT16(x) (x & 0x8000)
 //converts all "outputs" from the main system board (zones, lights) as a nice bitmask
 void outputs2String (int outputs)
 {
     int outIdx = 0;
     for(; outIdx < 4; outIdx++) { //4 bits I don't know
-        if(outputs & 0x80) {
+        if(HIGH_BIT_INT16(outputs)) {
             sOutputs[outIdx] = '?';
         } else {
             sOutputs[outIdx] = '-';
         }
         outputs <<= 1;
     }
-    sOutputs[4] = outputs & 0x80 ? 'a' : '-'; //either armed or partial lights?
+    sOutputs[outIdx++] = HIGH_BIT_INT16(outputs) ? 'a' : '-'; //bit 4 - either armed or partial lights?
     outputs <<= 1;
-    for(; outIdx < 13; outIdx++) { //8 zones
-        if(outputs & 0x80) {
+    for(; outIdx < 13; outIdx++) { //bits 5-12, 8 zones
+        if(HIGH_BIT_INT16(outputs)) {
             sOutputs[outIdx] = (char)(((int)'0') + outIdx-4);
         } else {
             sOutputs[outIdx] = '-';
         }
         outputs <<= 1;
     }
-    sOutputs[14] = outputs & 0x80 ? 's' : '-'; //secure
+    sOutputs[13] = HIGH_BIT_INT16(outputs) ? 's' : '-'; //secure
     outputs <<= 1;
-    sOutputs[15]= outputs & 0x80 ? 'o' : '-'; // unknown, but probably AC ON
+    sOutputs[14]= HIGH_BIT_INT16(outputs) ? 'o' : '-'; // unknown, but probably AC ON
     outputs <<= 1;
-    sOutputs[16]= outputs & 0x80 ? '-' : 't'; // tone/ringer, inverted output
-    sOutputs[17] = '\0';
+    sOutputs[15]= HIGH_BIT_INT16(outputs) ? '-' : 't'; // tone/ringer, inverted output
+    sOutputs[16] = '\0';
 }
-
-
 
 //is there something different about up/down clock? Would make sense for one to be master and the other slave
 //interestingly, with just recording down signal at "idle" we have interesting phenomena:
