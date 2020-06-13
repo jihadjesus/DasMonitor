@@ -57,7 +57,10 @@ void *commsEnablerFunc(void *vargp)
     static int cPingFails = 0;
     while(!done) {
         int sleepTime = 60;// check roughly every minute (will drift thanks to time a failing ping takes)
-        while(((sleepTime = sleep(sleepTime)) != 0) && !done) {}
+        while(!done &&(sleepTime >= 0)) {
+            sleep(5);
+            sleepTime -=5;
+        }
         result = system("ping " PING_USER_TARGET " -c 2 > /dev/null");
         if(result && !fEnableComms){ //need to enable comms
             result = system("ping " PING_CHECK_TARGET " -c 2 > /dev/null")? 0: 1; //check router is up and we're connected to it to avoid being triggered by network issues
@@ -127,7 +130,10 @@ void *emailerFunc(void *vargp)
     while(!done) {
         int sleepTime = 300;// check roughly every 5 minutes
         struct MessageQueue *mFirst/*, *mLast*/, *mSend;
-        while(((sleepTime = sleep(sleepTime)) != 0) && !done) {}
+        while(!done &&(sleepTime >= 0)) {
+            sleep(5);
+            sleepTime -=5;
+        }
         
         if(pmqLogFirst != NULL) { //if there's messages, remove them from the list ASAP and then prepare for sending
             pthread_mutex_lock(&muLog);
