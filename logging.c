@@ -83,15 +83,20 @@ void *commsEnablerFunc(void *vargp)
 
 //emailing based on https://curl.haxx.se/libcurl/c/smtp-tls.html
 //email header
-//may want to parameterize so we can do dates, hopefully we can trick gmail into threadin these without including message IDs
-static const char *payload_text = 
+int email_id = 0;
+int email_day = -1;
+static const char *email_header_text_p1 = 
   //"Date: Mon, 29 Nov 2010 21:54:29 +1100\r\n",
   "To: " EMAIL_TO "\r\n" 
 #ifdef EMAIL_CC
   "CC: " EMAIL_CC "\r\n" 
 #endif
   "From: " EMAIL_FROM " (SSA)\r\n" 
-  "Subject: " EMAIL_SUBJECT "\r\n" 
+  "Subject: " EMAIL_SUBJECT_PREFIX "%d %d\r\n" 
+  "Message-ID: SSA-m%d-d%d-i%d-" EMAIL_USER "\r\n";
+static const char *email_header_text_p2 = 
+  "References: SSA-m%d-d%d-i%d-" EMAIL_USER "\r\n"
+  "In-Reply-To: SSA-m%d-d%d-i%d-" EMAIL_USER "\r\n"
   "\r\n"; /* empty line to divide headers from body, see RFC5322 */ 
 
 static size_t payload_source(void *ptr, size_t size, size_t nmemb, void *userp)
@@ -147,8 +152,24 @@ void *emailerFunc(void *vargp)
             
             //we can take our time sending them
             //build the message queue to send
+            //time-related stuff first (headers for threading, subject)
+            time_t rawtime;
+            struct tm * timeinfo;
+            time ( &rawtime );
+            timeinfo = localtime ( &rawtime );
+            if(timeinfo->tm_mday != email_day) {
+                email_day = timeinfo->tm_mday;
+                email_id = 0;
+            }
             mSend = malloc(sizeof(struct MessageQueue));
-            strcpy(mSend->message, payload_text);
+            //strcpy(mSend->message, email_header_text);
+            int len = sprintf(mSend->message, email_header_text_p1, timeinfo->tm_mon+1, timeinfo->tm_mday, timeinfo->tm_mon+1, timeinfo->tm_mday, email_id);
+            if(email_id > 0){
+                sprintf(mSend->message + len, email_header_text_p2, timeinfo->tm_mon+1, timeinfo->tm_mday, 0, timeinfo->tm_mon+1, timeinfo->tm_mday, email_id -1);
+            }else{
+                sprintf(mSend->message + len, "\r\n");
+            }
+            email_id++;
             mSend->next = mFirst;
 
             //emailing code from https://curl.haxx.se/libcurl/c/smtp-tls.html
