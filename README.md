@@ -24,14 +24,21 @@ secrets.h for anything private (a device-specific password from google so I can 
 make does the job. Some bits in there to make it easier to push to my Pi and build
 
 ## running
-Best run in a tmux session so you can detach. Logs only go to stdout and via the remote notification mechanism, so probably want to tee the output to a file for future inspection
+Best run in a tmux session so you can detach. Must run as root for GPIO access. Logs only go to stdout and via the remote notification mechanism, so probably want to tee the output to a file for future inspection
 
 ## DAS 208L panel comms doco
 
+There's a document under logs_notes where I record my through process of what happened from the start of work until I had somewhat funcitoning code
+
 ## experimental stuff
 ### testing performance - c
-bitbang.c
+bitbangtest.c
 bitbanger.c
 ### testing performance - python
 python code
 ### sample logs
+A variety of these are under logs_notes. Mostly interesting if you want to attempt to analyse them yourself
+#### Bus Pirate logs
+Everything prefixed with SPI capture was gathered using a Bus Pirate and performing various actions. Had no way to learn the frames when I did this so I made a guess about where they started (which wasn't correct)
+#### Framebanger logs
+Prefixed with Framebanger capture, these are from an early frame-aware capture implementation that didn't know much aside from what the "normal" frame looks like and where in it to look for the triggered zone

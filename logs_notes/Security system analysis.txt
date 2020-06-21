@@ -1,0 +1,109 @@
+To all those reading, these are free-form notes of potentially dubious value. They do document things in vaguely the order they happened, but capture thought as much as action/data. For those doing this kind of RE for the first time, there may be some insights into the thought process used.
+
+Figuring out wire/comms details:
+4 pins: clock, signal, ground, power
+Power pin appears to be 12 or 15 volts? (forgot which, probbly 12)
+Clock looks to come in periodic bursts, main frequency is ~1.9KHz, seems to happen for 24 periods, pulse trains at 50 Hz
+Kind of hard to see much about the protocol using chip scope oscilliscope - probably because it's a clocked protocol. Batches of spikes, ~1.9KHz just like the clock. Seems to be ~3v in neutral.
+from a capture with presumably no illumination (possibly inverted logic) : 0 1 0 0 251 252
+
+Scratch all that - managed to capture some data using open logic sniffer. Got it to decode using the SPI analyzer: 8 bits, mode 0, 6 words per transmission. None of it is printable characters, which isn't surprising.
+
+Now need to do some binary capture and see about patterns.
+Bus Pirate settings: SPI, 30KHz, idle low (default), active to idles (default), middle (default), /CS (default), normal (H=3.3, L=GND) - 5, 1, 1, 2, 1, 2, 2
+There seems to occasionally be weird capture things happening, like the bits being different and the panels not accepting input. haven't figured it out yet, but have some OK captured packets
+
+Nothing happening, system nominal and disarmed
+Just keeps on sending:
+0xFF(0x00)0xFE(0x00)0x00(0x00)0x0F(0x00)0xFF(0x00)0xFD(0x00)
+
+Setting off room 1 PIR (sensor 2)
+Saw these ones:
+0xFF(0x00)0xFE(0x00)0x00(0x00)0x07(0x00)0xFF(0x00)0xFD(0x00)
+0xFF(0x00)0xFE(0x00)0x04(0x00)0x07(0x00)0xFF(0x00)0xFD(0x00)
+0xFF(0x00)0xFE(0x00)0x00(0x00)0x0F(0x00)0xFF(0x00)0xFD(0x00)
+
+Setting off room 4 PIR (sensor 5)
+Saw these ones:
+0xFF(0x00)0xFE(0x00)0x00(0x00)0x07(0x00)0xFF(0x00)0xFD(0x00)
+0xFF(0x00)0xFE(0x00)0x00(0x00)0x87(0x00)0xFF(0x00)0xFD(0x00)
+0xFF(0x00)0xFE(0x00)0x00(0x00)0x0F(0x00)0xFF(0x00)0xFD(0x00)
+
+Setting off room 3  PIR (sensor 4)
+Saw these ones:
+0xFF(0x00)0xFE(0x00)0x00(0x00)0x07(0x00)0xFF(0x00)0xFD(0x00)
+0xFF(0x00)0xFE(0x00)0x01(0x00)0x07(0x00)0xFF(0x00)0xFD(0x00)
+0xFF(0x00)0xFE(0x00)0x00(0x00)0x0F(0x00)0xFF(0x00)0xFD(0x00)
+
+typing 123789
+too many new options, look to file: SPI capture - typing - uniques.txt - looks like there's possibly some message corruption like I've seen before? trying to look at messages that appear more than once and assuming individuals are transient
+0xFF(0x00)0xFE(0x00)0x00(0x00)0x0D(0x00)0xFF(0x00)0xFD(0x00)
+Seems to occur at end of every keypress, maybe a transmit done or buzzer signal? Only 1 bit off of the "idle" message
+
+word data breakdown (big-endian analysis):
+word 0
+word 1
+word 2
+bit 0 normally low
+bit 1 normally low
+bit 2 normally low
+bit 3 normally low
+bit 4 - sensor 1?
+bit 5 - sensor 2
+bit 6 - sensor 3?
+bit 7 - sensor 4
+word 3
+bit 0 - sensor 5
+bit 1 - sensor 6?
+bit 2 - sensor 7?
+bit 3 - sensor 8?
+bit 4 - secure
+bit 5 - normally high
+bit 6 - normally high - Tone off?
+bit 7 - normally high
+word 4
+word 5
+
+Spent ages trying to do something using the OPi.GPIO and SpiSlave python libraries. The former uses sysfs to read/write the pins. Found that at fastest I could get reads every 200-250 microseconds, which is definitely not fast enough for 30 KHz (probably doesn't help that it opens the file for a pin every time it reads it).
+Did find out about https://www.home-assistant.io/integrations/orangepi_gpio/ which could let me just hook the sensors straight up to the GPIO pins, but there's some awkwardness there (still can't implement as a fake panel, this reads the pins via sysfs also).
+Checked the sensor pins with a multimeter, trying to figure out the voltages for potential direct connection. The system allows them to be configured as either connecting an end of line resistor (3.3kohm?) to trigger or shorting the same resistor (and supports inverted signalling mode). Downside is that (at least on door sensor) the voltages I got were 12.5v and 6.5v, which aren't going to work on a GPIO pin without extra effort.
+Now investigating WiringPi (which has a OPi variant). Under the hood it looks like it can use sysfs as a fallback, but the fast mode works by poking directly at the registers via /dev/mem. If that latter mode isn't fast enough, then there's not much I can do.
+
+And I successed at using wiringpi with some work. There was a variant for plain orange pi, forked from another fork that adapted for banana pi. That needed some modifications to have the different layout for the orange pi zero, but otherwise worked. Plenty fast enough on testing: a simple loop that reads the clock pin and data pin (separately), checks the current time in us and prints all that took 20-30 us per iteration (3-4 times faster than bare minimum) and went down to 2-5 us with the output being piped into a file.
+
+Still get some synch issues with synchronisation of receiving occasionally, so delineating frames based on timing WRT whole clock cycles (still gives a fair amount of processing time between frames).
+
+on analysis, turns out byte order is slightly different to discussed above, which is the downside of not having used a tool that let us track frames individually.
+
+all-good steady-state frame is:
+48 bits: ff fe ff ff 0 7
+
+triggering zone 2:
+48 bits: ff fe ff ff 0 3
+48 bits: ff fe ff ff 2 3
+
+word data breakdown (big-endian analysis): to be updated from code
+word 0
+word 1
+word 2
+word 3
+word 4
+bit 0 normally low
+bit 1 normally low
+bit 2 normally low
+bit 3 normally low
+bit 4 - sensor 1?
+bit 5 - sensor 2
+bit 6 - sensor 3?
+bit 7 - sensor 4
+word 5
+bit 0 - sensor 5
+bit 1 - sensor 6?
+bit 2 - sensor 7?
+bit 3 - sensor 8?
+bit 4 - secure
+bit 5 - normally low
+bit 6 - normally low
+bit 7 - normally low
+
+Got sick of updating this at some point, particularly with actual coding progress. Will at some point write up proper documentation rather than the process gone through. For now, the code is the best documentation.

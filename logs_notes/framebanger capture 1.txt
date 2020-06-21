@@ -1,0 +1,230 @@
+trigger zones 1,2,4,5
+arm the system (didn't notice which lights came on). may have unnecessarily pressed #
+disarm the system
+PIN has been changed since this log was generated.
+
+sudo ./framebanger
+let's go?
+13 bits, unrecognised data in frame: ff f8 0 0 0 0 0 0 0 0
+zones are getting triggered triggered new zone 80
+triggered new zone 40
+returned to secure, all zones triggered c0
+zones are getting triggered triggered new zone 40
+returned to secure, all zones triggered 40
+zones are getting triggered triggered new zone 10
+returned to secure, all zones triggered 10
+zones are getting triggered triggered new zone 10
+returned to secure, all zones triggered 10
+zones are getting triggered triggered new zone 10
+returned to secure, all zones triggered 10
+zones are getting triggered triggered new zone 8
+returned to secure, all zones triggered 8
+zones are getting triggered triggered new zone 8
+returned to secure, all zones triggered 8
+zones are getting triggered 48 bits, unrecognised data in frame: ff fe fb ff 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 1f fe fb ff 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 1f fe fb ff 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 1f fe fb ff 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 1f fe fb ff 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 1f fe fb ff 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 1b fe fb ff 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 1b fe fb ff 0 0 0 0 0 0
+returned to secure, all zones triggered 0
+zones are getting triggered 48 bits, unrecognised data in frame: 0 7e ff ef 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 0 7e ff ef 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 0 7e ff ef 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 0 7e ff ef 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 0 7e ff ef 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 0 7e ff ef 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 2 6e ff ef 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 0 6e ff ef 0 0 0 0 0 0
+returned to secure, all zones triggered 0
+zones are getting triggered 48 bits, unrecognised data in frame: ff fe ff ff 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 1f fe fb ff 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 1f fe fb ff 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 1f fe fb ff 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 1f fe fb ff 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 1f fe fb ff 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 1f fe fb ff 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 1b fe fb ff 0 0 0 0 0 0
+returned to secure, all zones triggered 0
+zones are getting triggered 48 bits, unrecognised data in frame: ff fe ff ff 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 7f fe df ff 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 7f fe df ff 0 2 0 0 0 0
+48 bits, unrecognised data in frame: 7f fe df ff 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 7f fe df ff 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 7f fe df ff 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 7f fe df ff 0 0 0 0 0 0
+returned to secure, all zones triggered 0
+48 bits, unrecognised data in frame: 5f fe ff ff 0 6 0 0 0 0
+zones are getting triggered 48 bits, unrecognised data in frame: ff fe ff ff 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 0 3e ff f7 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 0 3e ff f7 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 0 3e ff f7 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 0 3e ff f7 0 0 0 0 0 0
+48 bits, unrecognised data in frame: 0 3e ff f7 0 0 0 0 0 0
+returned to secure, all zones triggered 0
+48 bits, unrecognised data in frame: 0 3e ff f7 0 6 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+zones are getting triggered 48 bits, unrecognised data in frame: ff fe ff ff 8 3 0 0 0 0
+48 bits, unrecognised data in frame: 7f fe fb ff 8 3 0 0 0 0
+48 bits, unrecognised data in frame: 7f fe fb ff 8 3 0 0 0 0
+48 bits, unrecognised data in frame: 7f fe fb ff 8 3 0 0 0 0
+48 bits, unrecognised data in frame: 7f fe fb ff 8 3 0 0 0 0
+48 bits, unrecognised data in frame: 7f fe fb ff 8 3 0 0 0 0
+returned to secure, all zones triggered 0
+48 bits, unrecognised data in frame: 7f fe fb ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+zones are getting triggered triggered new zone 1a
+48 bits, unrecognised data in frame: ff fe ff ff 8 d0 0 0 0 0
+48 bits, unrecognised data in frame: 8d fe ff ef 8 d0 0 0 0 0
+48 bits, unrecognised data in frame: d fe ff ef 8 d0 0 0 0 0
+48 bits, unrecognised data in frame: d fe ff ef 8 d0 0 0 0 0
+48 bits, unrecognised data in frame: d fe ff ef 8 d0 0 0 0 0
+48 bits, unrecognised data in frame: d fe ff ef 8 d0 0 0 0 0
+48 bits, unrecognised data in frame: d fe ff ef 8 d0 0 0 0 0
+48 bits, unrecognised data in frame: d ee ff ef 8 d0 0 0 0 0
+returned to secure, all zones triggered 1a
+48 bits, unrecognised data in frame: d ee ff ef 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+zones are getting triggered 48 bits, unrecognised data in frame: ff fe ff ff 8 3 0 0 0 0
+48 bits, unrecognised data in frame: 7f fe fb ff 8 3 0 0 0 0
+48 bits, unrecognised data in frame: 7f fe fb ff 8 3 0 0 0 0
+48 bits, unrecognised data in frame: 7f fe fb ff 8 3 0 0 0 0
+48 bits, unrecognised data in frame: 7f fe fb ff 8 3 0 0 0 0
+48 bits, unrecognised data in frame: 7f fe fb ff 8 3 0 0 0 0
+returned to secure, all zones triggered 0
+48 bits, unrecognised data in frame: 7f fe fb ff 8 d6 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 de 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+48 bits, unrecognised data in frame: ff fe ff ff 8 df 0 0 0 0
+zones are getting triggered triggered new zone 3
+48 bits, unrecognised data in frame: ff fe df ff 0 1b 0 0 0 0
+48 bits, unrecognised data in frame: 7f fe df ff 0 1b 0 0 0 0
+48 bits, unrecognised data in frame: 7f fe df ff 0 1b 0 0 0 0
+48 bits, unrecognised data in frame: 7f fe df ff 0 1b 0 0 0 0
+48 bits, unrecognised data in frame: 7f fe df ff 0 1b 0 0 0 0
+48 bits, unrecognised data in frame: 7f fe df ff 0 0 0 0 0 0
+returned to secure, all zones triggered 3
+19 bits, unrecognised data in frame: ff fe e0 0 0 0 0 0 0 0
