@@ -32,8 +32,11 @@ There's a document under logs_notes where I record my through process of what ha
 
 ## experimental stuff
 ### testing performance - c
-bitbangtest.c
-bitbanger.c
+Technically all of the c code came after the python code, but it's more interesting because it's actually sufficiently performant
+#### bitbangtest.c
+The first c code for testing if I can bit bang fast enough on my Orange Pi Zero using WiringPi. Needed to be able to read two pins in under 30 usec (realistically closer to 10 so we could get multiple samples per period). Worked fast enough even when printing to output (redirecting stdout to a file took us from 25 usec a sample to 5).
+####bitbanger.c
+First attempt at synching to frame boundaries and printing them. Not really useful for much.
 ### testing performance - python
 python code
 ### sample logs
