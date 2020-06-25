@@ -56,7 +56,7 @@ void *commsEnablerFunc(void *vargp)
     int result;
     static int cPingFails = 0;
     while(!done) {
-        int sleepTime = 60;// check roughly every minute (will drift thanks to time a failing ping takes)
+        int sleepTime = PING_FREQUENCY;// check roughly every minute (will drift thanks to time a failing ping takes)
         while(!done &&(sleepTime >= 0)) {
             sleep(5);
             sleepTime -=5;
@@ -93,10 +93,9 @@ static const char *email_header_text_p1 =
 #endif
   "From: " EMAIL_FROM " (SSA)\r\n" 
   "Subject: " EMAIL_SUBJECT_PREFIX "%d %d\r\n" 
-  "Message-ID: SSA-m%d-d%d-i%d-" EMAIL_USER "\r\n";
-static const char *email_header_text_p2 = 
-  "References: SSA-m%d-d%d-i%d-" EMAIL_USER "\r\n"
-  "In-Reply-To: SSA-m%d-d%d-i%d-" EMAIL_USER "\r\n"
+//  "Message-ID: SSA-m%d-d%d-i%d@opimonitor.local\r\n"
+  "In-Reply-To: " EMAIL_THREAD_MESSAGE "\r\n"
+  "Thread-Topic: " EMAIL_SUBJECT_PREFIX "\r\n"
   "\r\n"; /* empty line to divide headers from body, see RFC5322 */ 
 
 static size_t payload_source(void *ptr, size_t size, size_t nmemb, void *userp)
@@ -129,11 +128,17 @@ static size_t payload_source(void *ptr, size_t size, size_t nmemb, void *userp)
     return len;
 }
 
+static size_t header_sink(char* b, size_t size, size_t nmemb, void *userp) {
+    size_t numbytes = size * nmemb;
+    logdata(LOG_LEVEL_EMAIL, "%.*s\n", numbytes, b);
+    return numbytes;
+}
+
 //one of our ways to send out interesting logs - email the owner
 void *emailerFunc(void *vargp)
 {
     while(!done) {
-        int sleepTime = 300;// check roughly every 5 minutes
+        int sleepTime = EMAIL_FREQUENCY;// check roughly every 5 minutes
         struct MessageQueue *mFirst/*, *mLast*/, *mSend;
         while(!done &&(sleepTime >= 0)) {
             sleep(5);
@@ -163,12 +168,8 @@ void *emailerFunc(void *vargp)
             }
             mSend = malloc(sizeof(struct MessageQueue));
             //strcpy(mSend->message, email_header_text);
-            int len = sprintf(mSend->message, email_header_text_p1, timeinfo->tm_mon+1, timeinfo->tm_mday, timeinfo->tm_mon+1, timeinfo->tm_mday, email_id);
-            if(email_id > 0){
-                sprintf(mSend->message + len, email_header_text_p2, timeinfo->tm_mon+1, timeinfo->tm_mday, 0, timeinfo->tm_mon+1, timeinfo->tm_mday, email_id -1);
-            }else{
-                sprintf(mSend->message + len, "\r\n");
-            }
+            int len = sprintf(mSend->message, email_header_text_p1, timeinfo->tm_mon+1, timeinfo->tm_mday/*, timeinfo->tm_mon+1, timeinfo->tm_mday, email_id*/);
+            
             email_id++;
             mSend->next = mFirst;
 
@@ -193,6 +194,7 @@ void *emailerFunc(void *vargp)
                 curl_easy_setopt(curl, CURLOPT_MAIL_RCPT, recipients);
                 
                 curl_easy_setopt(curl, CURLOPT_READFUNCTION, payload_source);
+                //curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, header_sink);
                 curl_easy_setopt(curl, CURLOPT_READDATA, mSend);
                 curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
                 //~ curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
