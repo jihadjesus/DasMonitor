@@ -10,6 +10,9 @@
 #include "config.h"
 #include "secrets.h"
 
+//set up our array of "to" email addresses and associated length
+CONFIG_EMAIL_TO_ARRAY
+
 pthread_mutex_t muLog = PTHREAD_MUTEX_INITIALIZER;
 struct MessageQueue *pmqLogFirst = NULL;
 struct MessageQueue *pmqLogLast = NULL;
@@ -61,9 +64,10 @@ void *commsEnablerFunc(void *vargp)
             sleep(5);
             sleepTime -=5;
         }
-        result = system("arping " PING_USER_TARGET " -c 1 -w 3 > /dev/null");
+        result = system("arping " PING_USER_TARGET " -I wlan0 -c 1 -w 3 > /dev/null");
+        logdata(LOG_INFO, "Ping result: %s \n", (result == 0)?"present":"not");
         if(result && !fEnableComms){ //need to enable comms
-            result = system("arping " PING_CHECK_TARGET " -c 1 -w 3 > /dev/null")? 0: 1; //check router is up and we're connected to it to avoid being triggered by network issues
+            result = system("arping " PING_CHECK_TARGET " -I wlan0 -c 1 -w 3 > /dev/null")? 0: 1; //check router is up and we're connected to it to avoid being triggered by network issues
             if(result){
                 cPingFails++; //takes multiple fails to enable output
                 if(cPingFails >= PING_MAX_FAILS){
@@ -87,7 +91,9 @@ int email_id = 0;
 int email_day = -1;
 static const char *email_header_text_p1 = 
   //"Date: Mon, 29 Nov 2010 21:54:29 +1100\r\n",
+#ifdef EMAIL_TO 
   "To: " EMAIL_TO "\r\n" 
+#endif
 #ifdef EMAIL_CC
   "CC: " EMAIL_CC "\r\n" 
 #endif
@@ -186,8 +192,12 @@ void *emailerFunc(void *vargp)
                 curl_easy_setopt(curl, CURLOPT_USE_SSL, (long)CURLUSESSL_ALL);
  
                 curl_easy_setopt(curl, CURLOPT_CAINFO, "/etc/ssl/certs/ca-certificates.crt");
- 
+                for(int i=0; i<EMAIL_TO_ARRAY_LEN; ++i){
+                    recipients = curl_slist_append(recipients, EMAIL_TO_ARRAY[i]);
+                }
+#ifdef EMAIL_TO 
                 recipients = curl_slist_append(recipients, EMAIL_TO);
+#endif
 #ifdef EMAIL_CC
                 recipients = curl_slist_append(recipients, EMAIL_CC);
 #endif

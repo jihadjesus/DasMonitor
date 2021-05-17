@@ -1,8 +1,10 @@
 //emailing based on https://curl.haxx.se/libcurl/c/smtp-tls.html
 //details for notification emails
 #define EMAIL_FROM "<aaron.frishling@gmail.com>"
-#define EMAIL_TO "<aaron.frishling+SecuritySystem@gmail.com>"
+//#define EMAIL_TO "<aaron.frishling+SecuritySystem@gmail.com>"
 //#define EMAIL_CC "<aaron.frishling@gmail.com>"
+//easiest way to use #define to set up an array. For each email adress, add them to the array and ignore the rest
+#define CONFIG_EMAIL_TO_ARRAY const char *EMAIL_TO_ARRAY[] = {"<aaron.frishling+SecuritySystem@gmail.com>","<aaron.frishling@streetgeek.com.au>"}; const int EMAIL_TO_ARRAY_LEN = sizeof(EMAIL_TO_ARRAY) / sizeof(char*);
 #define EMAIL_SUBJECT_PREFIX "[SSA]"
 #define EMAIL_USER "aaron.frishling@gmail.com"
 #define EMAIL_SERVER_URL "smtp://smtp.gmail.com:587"
