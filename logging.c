@@ -61,9 +61,9 @@ void *commsEnablerFunc(void *vargp)
             sleep(5);
             sleepTime -=5;
         }
-        result = system("ping " PING_USER_TARGET " -c 2 > /dev/null");
+        result = system("arping " PING_USER_TARGET " -c 1 -w 3 > /dev/null");
         if(result && !fEnableComms){ //need to enable comms
-            result = system("ping " PING_CHECK_TARGET " -c 2 > /dev/null")? 0: 1; //check router is up and we're connected to it to avoid being triggered by network issues
+            result = system("arping " PING_CHECK_TARGET " -c 1 -w 3 > /dev/null")? 0: 1; //check router is up and we're connected to it to avoid being triggered by network issues
             if(result){
                 cPingFails++; //takes multiple fails to enable output
                 if(cPingFails >= PING_MAX_FAILS){
