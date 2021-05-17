@@ -12,11 +12,13 @@
 
 //set up our array of "to" email addresses and associated length
 CONFIG_EMAIL_TO_ARRAY
+//set up array of user IPs to track for enabling security
+CONFIG_PING_USER_TARGET_ARRAY
 
 pthread_mutex_t muLog = PTHREAD_MUTEX_INITIALIZER;
 struct MessageQueue *pmqLogFirst = NULL;
 struct MessageQueue *pmqLogLast = NULL;
-int fEnableComms = 0;
+int fEnableComms = 1; //start enabled so we can get "starting up" email
 
 //pretty self-explanaory
 void logdata(int level, const char * format, ...)
@@ -56,6 +58,7 @@ void logdata(int level, const char * format, ...)
 //current implementation is to detect whether their phone is still connected to the home network
 void *commsEnablerFunc(void *vargp)
 {
+    char tmpStr[500];
     int result;
     static int cPingFails = 0;
     while(!done) {
@@ -64,8 +67,16 @@ void *commsEnablerFunc(void *vargp)
             sleep(5);
             sleepTime -=5;
         }
+#ifdef PING_USER_TARGET
         result = system("arping " PING_USER_TARGET " -I wlan0 -c 1 -w 3 > /dev/null");
-        logdata(LOG_INFO, "Ping result: %s \n", (result == 0)?"present":"not");
+#else
+        result = 1; //want to check for users until we find one. If we do, no need to log
+        for(int i=0; i < PING_USER_TARGET_ARRAY_LEN && result; ++i){
+            sprintf(tmpStr, "arping %s -I wlan0 -c 1 -w 3 > /dev/null", PING_USER_TARGET_ARRAY[i]);
+            result = system(tmpStr);
+        }
+#endif
+        //logdata(LOG_INFO, "Ping result: %s \n", (result == 0)?"present":"not");
         if(result && !fEnableComms){ //need to enable comms
             result = system("arping " PING_CHECK_TARGET " -I wlan0 -c 1 -w 3 > /dev/null")? 0: 1; //check router is up and we're connected to it to avoid being triggered by network issues
             if(result){

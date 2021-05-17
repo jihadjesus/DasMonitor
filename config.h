@@ -15,7 +15,9 @@
 
 //details for detecting owner presence and network state
 #define PING_MAX_FAILS 3
-#define PING_USER_TARGET "192.168.1.4"
+//#define PING_USER_TARGET "192.168.1.4"
+//easiest way to use #define to set up an array. For each phone to track, add them to the array and ignore the rest
+#define CONFIG_PING_USER_TARGET_ARRAY const char *PING_USER_TARGET_ARRAY[] = {"192.168.1.4"}; const int PING_USER_TARGET_ARRAY_LEN = sizeof(PING_USER_TARGET_ARRAY) / sizeof(PING_USER_TARGET_ARRAY[0]);
 #define PING_CHECK_TARGET "192.168.1.1"
 //how often we check for owner presence in seconds
 #define PING_FREQUENCY 60
