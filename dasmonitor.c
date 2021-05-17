@@ -14,7 +14,7 @@
 void sigintHandler(int sig_num) 
 { 
     done = 1;
-    logdata(LOG_IMPORTANT, "dying now\n");
+    logdata(LOG_IMPORTANT, "DasMonitor shutting down\n");
 } 
 
 //returns the ascii char for a button from a number
@@ -206,7 +206,7 @@ int main (void)
     wiringPiSetupPhys () ;
     pinMode (pin_sck, INPUT) ;
     pinMode (pin_rx, INPUT) ;
-    logdata(LOG_INFO, "let's go?\n");
+    logdata(LOG_IMPORTANT, "DasMonitor starting up\n");
     //main processing loop - all of our frame-related code is here
     while (!done) {
         int result = getNextFrame();
