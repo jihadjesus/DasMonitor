@@ -225,7 +225,7 @@ void *emailerFunc(void *vargp)
                 curl_slist_free_all(recipients);
                 curl_easy_cleanup(curl);
             }
-            printf("... complete/n");
+            printf("... complete\n");
         }
     }
     return 0;
