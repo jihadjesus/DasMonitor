@@ -5,7 +5,10 @@
 //#define EMAIL_CC "<aaron.frishling@gmail.com>"
 //easiest way to use #define to set up an array. For each email adress, add them to the array and ignore the rest
 #define CONFIG_EMAIL_TO_ARRAY const char *EMAIL_TO_ARRAY[] = {"<aaron.frishling+SecuritySystem@gmail.com>","<aaron.frishling@streetgeek.com.au>"}; const int EMAIL_TO_ARRAY_LEN = sizeof(EMAIL_TO_ARRAY) / sizeof(char*);
+//email subject will start with this
 #define EMAIL_SUBJECT_PREFIX "[SSA]"
+//and use this argument to strftime to format the date
+#define EMAIL_SUBJECT_DATE_FORMAT "%Y %b %d %a"
 #define EMAIL_USER "aaron.frishling@gmail.com"
 #define EMAIL_SERVER_URL "smtp://smtp.gmail.com:587"
 //how often we check if we need to send emails and do so, in seconds

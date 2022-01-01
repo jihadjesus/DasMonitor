@@ -30,7 +30,8 @@ void logdata(int level, const char * format, ...)
     //collect the time
     time ( &rawtime );
     timeinfo = localtime ( &rawtime );
-    int written = sprintf(tmpMessage->message, "[%d %d %d %d:%d:%d]", timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday, timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+    //int written = sprintf(tmpMessage->message, "[%d %d %d %d:%d:%d]", timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday, timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+    int written = strftime(tmpMessage->message, 100, "[%Y %b %d %a %H:%M:%S]", timeinfo);
     //collect the actual input
     va_list args;
     va_start (args, format);
@@ -109,7 +110,7 @@ static const char *email_header_text_p1 =
   "CC: " EMAIL_CC "\r\n" 
 #endif
   "From: " EMAIL_FROM " (SSA)\r\n" 
-  "Subject: " EMAIL_SUBJECT_PREFIX "%d %d\r\n" 
+  "Subject: " EMAIL_SUBJECT_PREFIX " %s\r\n" 
 //  "Message-ID: SSA-m%d-d%d-i%d@opimonitor.local\r\n"
   "In-Reply-To: " EMAIL_THREAD_MESSAGE "\r\n"
   "Thread-Topic: " EMAIL_SUBJECT_PREFIX "\r\n"
@@ -157,6 +158,7 @@ void *emailerFunc(void *vargp)
     while(!done) {
         int sleepTime = EMAIL_FREQUENCY;// check roughly every 5 minutes
         struct MessageQueue *mFirst/*, *mLast*/, *mSend;
+        char sDate[128];
         while(!done &&(sleepTime >= 0)) {
             sleep(5);
             sleepTime -=5;
@@ -185,7 +187,8 @@ void *emailerFunc(void *vargp)
             }
             mSend = malloc(sizeof(struct MessageQueue));
             //strcpy(mSend->message, email_header_text);
-            int len = sprintf(mSend->message, email_header_text_p1, timeinfo->tm_mon+1, timeinfo->tm_mday/*, timeinfo->tm_mon+1, timeinfo->tm_mday, email_id*/);
+            int dLen = strftime(sDate,127,EMAIL_SUBJECT_DATE_FORMAT, timeinfo);
+            int len = sprintf(mSend->message, email_header_text_p1, sDate/*timeinfo->tm_mon+1, timeinfo->tm_mday, email_id*/);
             
             email_id++;
             mSend->next = mFirst;
